@@ -1,0 +1,179 @@
+local EggHandler = {}
+--//Services
+local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+--Player Variables
+repeat wait() until Players.LocalPlayer
+local Player = Players.LocalPlayer
+local debounce = false
+--// UI Variables
+local PlayerGui = Player:WaitForChild("PlayerGui")
+local ScreenGui = PlayerGui:WaitForChild("ScreenGui")
+local HatchFrame = ScreenGui:WaitForChild("HatchPet")
+
+--//Particles
+local CommonEffect = script:WaitForChild("Glow")
+--//Functions
+local function ChangeCamera()
+	workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+
+	workspace.Camera.CameraType = Enum.CameraType.Custom
+
+	wait()
+
+	workspace.Camera.CameraType = Enum.CameraType.Scriptable
+end
+
+function buyEgg(Eggz, Pet)
+	if debounce == false then
+		debounce = true
+		local isEffectsEnabled = function()
+			return true
+		end 
+		--Camera stuff u weird hackers wont understand LOL
+		local cameraOffset = CFrame.new(0, 0, -4.5) * CFrame.Angles(0, math.rad(180), 0)
+		local pos = Instance.new("CFrameValue")
+		local pos1 = Instance.new("CFrameValue")
+		newOffset = cameraOffset + Vector3.new(-0.25, 0, 0)
+		local EggDelay = 0.075
+		local Num = 1
+		--Clone objects
+		local Egg = game.ReplicatedStorage:WaitForChild(tostring(Eggz)):Clone()
+		local Pet = game.ReplicatedStorage:WaitForChild(tostring(Pet)):Clone()
+		local glow = script.Glow:Clone()
+		Egg.Parent = workspace
+		Pet.Parent = workspace
+		local eggDisplay = RunService.RenderStepped:Connect(function()
+			Egg:SetPrimaryPartCFrame(Workspace.Camera.CFrame * newOffset * pos.Value) -- you NEED to have the model with the RootPart as the PrimaryPart
+		end)
+
+		pos.Value = CFrame.new(0,0, -3)
+		--//New Functions
+		--// Change Size
+		local function size(EggDel)
+			ChangeCamera()
+			local goal = {}
+			goal.Value = CFrame.new(0,0, -1)
+
+			local tweenInfo = TweenInfo.new(0.5)
+
+			local tween = TweenService:Create(pos, tweenInfo, goal)
+			spawn(function()
+				tween:Play()
+			end)
+			wait(0.5)
+		end
+		--//Removing The Egg
+		local function tran()
+			local goal = {}
+			goal.Value = CFrame.new(0,0, -5)
+
+			local tweenInfo = TweenInfo.new(0.2)
+
+			local tween = TweenService:Create(pos, tweenInfo, goal)
+			spawn(function()
+				tween:Play()
+			end)
+			wait(0.2)
+
+			eggDisplay:Disconnect()
+			Egg:Destroy()
+		end
+
+		--// Moving the Pet Down
+		local function movePet()
+			local goal = {}
+			goal.Value = CFrame.new(0,-5.5, 0)
+
+			local tweenInfo = TweenInfo.new(2)
+
+			local tween = TweenService:Create(pos1, tweenInfo, goal)
+			spawn(function()
+				tween:Play()
+			end)
+			wait(2)
+		end
+		--// Rotate some Epic Egg
+		local function rotate(Rot, De)
+
+			local goal = {}
+			goal.Value = CFrame.fromOrientation(0,0, math.rad(Rot))
+
+			local tweenInfo = TweenInfo.new(De)
+
+			local tween = TweenService:Create(pos, tweenInfo, goal)
+			spawn(function()
+				tween:Play()
+			end)
+			wait(De)
+		end
+		spawn(function()
+			size()
+		end)
+		for i = 1,20 do
+			rotate(15, EggDelay)
+			wait(EggDelay)
+			rotate(-15, EggDelay)
+			wait(EggDelay)
+			EggDelay = EggDelay - .05
+		end
+		tran()
+		--// Displaying the Pet
+		local PetDisplay = RunService.RenderStepped:Connect(function()
+			Pet:SetPrimaryPartCFrame(Workspace.Camera.CFrame * newOffset * pos1.Value) -- you NEED to have the model with the RootPart as the PrimaryPart
+		end)
+		glow.Parent = Pet.PrimaryPart
+		if isEffectsEnabled() == true then
+			for a, b in pairs(CommonEffect:GetChildren()) do
+				if b:IsA("ParticleEmitter") then
+					local particle = b:Clone()
+					particle.Enabled = false
+					particle.Parent = Pet.PrimaryPart or Pet:FindFirstChildWhichIsA("BasePart")
+					particle:Emit(glow.AmountToEmit.Value)
+				end
+			end
+		end
+
+		for a, b in pairs(Pet.PrimaryPart:GetChildren()) do
+			if b:IsA("ParticleEmitter") then
+				for i = 1,10 do
+					wait(0.05)
+
+					Num -= 0.1
+					b.Speed = NumberRange.new(Num + i, Num + i)
+					b.Lifetime = NumberRange.new(Num, Num)
+
+				end
+			end
+		end
+		--// Moving The Pet Down
+		wait(3)
+		movePet()
+		--// Desotrying Stuff
+		PetDisplay:Disconnect()
+		Pet:Destroy()
+		--//Normal Camera
+		Workspace.Camera.CameraType = Enum.CameraType.Custom
+		debounce = false
+		end
+		
+		
+		
+	
+end
+
+function EggHandler:Int()
+	HatchFrame.Click.MouseButton1Click:Connect(function()
+		local TextBox = HatchFrame.TextBox
+		local Pet = TextBox.Text
+		if game.ReplicatedStorage:FindFirstChild(Pet) then
+			buyEgg("Egg", Pet)
+		else
+			TextBox.Text = "Not a pet"
+		end
+	end)
+end
+
+return EggHandler
